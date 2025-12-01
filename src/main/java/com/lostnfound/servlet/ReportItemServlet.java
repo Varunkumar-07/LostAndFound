@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 public class ReportItemServlet extends HttpServlet {
 
@@ -37,7 +39,17 @@ public class ReportItemServlet extends HttpServlet {
         item.setDescription(req.getParameter("description"));
         item.setLocationFound(req.getParameter("location"));
         item.setType(type.trim());
-        item.setContact(req.getParameter("contactInfo"));
+        item.setReportedBy(req.getParameter("reportedBy"));
+        item.setContact(req.getParameter("contact"));
+
+        String dateStr = req.getParameter("date");
+        if (dateStr != null && !dateStr.isBlank()) {
+            try {
+                item.setDateReported(LocalDate.parse(dateStr));
+            } catch (DateTimeParseException e) {
+                item.setDateReported(null);
+            }
+        }
 
         boolean success = itemDAO.insertItem(item);
         if (success) {
