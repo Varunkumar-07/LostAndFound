@@ -1,9 +1,12 @@
 package com.lostnfound.model;
 
+import java.sql.Timestamp;
+
 public class Admin {
     private int adminId;
     private String username;
     private String passwordHash;
+    private Timestamp createdAt;
 
     public Admin() {}
 
@@ -15,4 +18,7 @@ public class Admin {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public Timestamp getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
 }
