@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.lostnfound.model.Claim" %>
 <%@ page import="com.lostnfound.model.Admin" %>
+<%@ page import="com.lostnfound.util.HtmlUtils" %>
 <%@ page import="java.util.List" %>
 <%
     Admin adminUser = (Admin) session.getAttribute("adminUser");
@@ -30,7 +31,7 @@
             </nav>
             <div class="sidebar-user">
                 <span class="sidebar-user-label">Signed in as</span>
-                <span class="sidebar-user-name"><%= adminUser != null ? adminUser.getUsername() : "Admin" %></span>
+                <span class="sidebar-user-name"><%= HtmlUtils.e(adminUser != null ? adminUser.getUsername() : "Admin") %></span>
             </div>
         </aside>
         <main class="admin-main">
@@ -74,17 +75,32 @@
                                     <th>Claimant</th>
                                     <th>Contact</th>
                                     <th>Proof / Description</th>
+                                    <th>Submitted At</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <% for (Claim claim : pendingClaims) { %>
+                                <% for (Claim claim : pendingClaims) {
+                                    String proof = claim.getProofDescription();
+                                    String proofPreview = (proof != null && proof.length() > 60)
+                                        ? HtmlUtils.e(proof.substring(0, 60)) + "…"
+                                        : HtmlUtils.e(proof);
+                                %>
                                 <tr>
                                     <td class="td-id">#<%= claim.getClaimId() %></td>
-                                    <td class="td-item"><strong><%= claim.getItemTitle() %></strong></td>
-                                    <td><%= claim.getClaimantName() %></td>
-                                    <td><%= claim.getClaimantContact() %></td>
-                                    <td class="td-proof"><%= claim.getProofDescription() %></td>
+                                    <td class="td-item"><strong><%= HtmlUtils.e(claim.getItemTitle()) %></strong></td>
+                                    <td><%= HtmlUtils.e(claim.getClaimantName()) %></td>
+                                    <td><%= HtmlUtils.e(claim.getClaimantContact()) %></td>
+                                    <td class="td-proof">
+                                        <span title="<%= HtmlUtils.e(proof) %>">
+                                            <%= proofPreview %>
+                                        </span>
+                                    </td>
+                                    <td class="td-date">
+                                        <%= claim.getClaimedAt() != null
+                                            ? new java.text.SimpleDateFormat("dd MMM yyyy, HH:mm").format(claim.getClaimedAt())
+                                            : "—" %>
+                                    </td>
                                     <td class="td-actions">
                                         <form method="POST" action="<%= ctx %>/admin/dashboard" style="display:inline;">
                                             <input type="hidden" name="claimId" value="<%= claim.getClaimId() %>">
