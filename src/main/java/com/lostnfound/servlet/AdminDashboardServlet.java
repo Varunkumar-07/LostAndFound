@@ -46,13 +46,28 @@ public class AdminDashboardServlet extends HttpServlet {
             return;
         }
 
+        // CSRF validation
+        HttpSession session = req.getSession(false);
+        String csrfToken   = (String) session.getAttribute("csrfToken");
+        String requestToken = req.getParameter("_csrf");
+        if (csrfToken == null || !csrfToken.equals(requestToken)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "CSRF validation failed");
+            return;
+        }
+
         String claimIdStr = req.getParameter("claimId");
         String action     = req.getParameter("action");
 
         if (claimIdStr != null && action != null) {
-            int claimId = Integer.parseInt(claimIdStr);
+            int claimId;
+            try {
+                claimId = Integer.parseInt(claimIdStr);
+            } catch (NumberFormatException e) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid claim ID");
+                return;
+            }
+
             String status = "approve".equals(action) ? "approved" : "rejected";
-            HttpSession session = req.getSession(false);
             Admin admin = (Admin) session.getAttribute("adminUser");
             new ClaimDAO().updateClaimStatus(claimId, status, admin.getAdminId());
         }
