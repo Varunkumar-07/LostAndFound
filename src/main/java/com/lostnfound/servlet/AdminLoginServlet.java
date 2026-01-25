@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.util.UUID;
 
 public class AdminLoginServlet extends HttpServlet {
 
@@ -35,8 +36,11 @@ public class AdminLoginServlet extends HttpServlet {
         Admin admin = adminDAO.validateAdmin(username, password);
 
         if (admin != null) {
+            HttpSession old = req.getSession(false);
+            if (old != null) old.invalidate();
             HttpSession session = req.getSession(true);
             session.setAttribute("adminUser", admin);
+            session.setAttribute("csrfToken", UUID.randomUUID().toString());
             session.setMaxInactiveInterval(30 * 60);
             resp.sendRedirect(req.getContextPath() + "/admin/dashboard");
         } else {

@@ -35,11 +35,16 @@ public class ClaimItemServlet extends HttpServlet {
             return;
         }
 
+        if (proofDescription == null || proofDescription.isBlank()) {
+            resp.sendRedirect(req.getContextPath() + "/item?id=" + itemId + "&error=true");
+            return;
+        }
+
         Claim claim = new Claim();
         claim.setItemId(itemId);
         claim.setClaimantName(claimantName.trim());
         claim.setClaimantContact(claimantContact.trim());
-        claim.setProofDescription(proofDescription != null ? proofDescription.trim() : "");
+        claim.setProofDescription(proofDescription.trim());
 
         boolean success = new ClaimDAO().insertClaim(claim);
 
