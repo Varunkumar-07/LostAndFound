@@ -1,6 +1,8 @@
 package com.lostnfound.dao;
 
 import com.lostnfound.model.Claim;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -8,12 +10,16 @@ import java.util.List;
 
 public class ClaimDAO {
 
+    private static final Logger log = LoggerFactory.getLogger(ClaimDAO.class);
+
     public boolean insertClaim(Claim claim) {
         Connection conn = null;
         try {
             conn = DBConnection.getConnection();
             conn.setAutoCommit(false);
 
+            // Lock the item row and verify it is still open — prevents duplicate claims
+            // if two requests race or if the form is submitted against a non-open item
             String checkSql = "SELECT status FROM item WHERE item_id = ? FOR UPDATE";
             try (PreparedStatement ps = conn.prepareStatement(checkSql)) {
                 ps.setInt(1, claim.getItemId());
@@ -47,14 +53,14 @@ public class ClaimDAO {
             return true;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("Error inserting claim for item {}", claim.getItemId(), e);
             if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+                try { conn.rollback(); } catch (SQLException ex) { log.error("Rollback failed", ex); }
             }
             return false;
         } finally {
             if (conn != null) {
-                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { log.error("Error closing connection", e); }
             }
         }
     }
@@ -68,9 +74,11 @@ public class ClaimDAO {
                      "JOIN item i ON c.item_id = i.item_id " +
                      "WHERE c.status = 'pending' " +
                      "ORDER BY c.claimed_at DESC";
+
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 Claim c = new Claim();
                 c.setClaimId(rs.getInt("claim_id"));
@@ -84,7 +92,7 @@ public class ClaimDAO {
                 claims.add(c);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("Error fetching pending claims", e);
         }
         return claims;
     }
@@ -101,7 +109,10 @@ public class ClaimDAO {
                 ps.setInt(2, adminId);
                 ps.setInt(3, claimId);
                 int rows = ps.executeUpdate();
-                if (rows == 0) { conn.rollback(); return false; }
+                if (rows == 0) {
+                    conn.rollback();
+                    return false;
+                }
             }
 
             int itemId = -1;
@@ -114,20 +125,27 @@ public class ClaimDAO {
 
             if (itemId != -1) {
                 if ("approved".equals(status)) {
+                    // Mark item verified
                     String updateItem = "UPDATE item SET status = 'verified' WHERE item_id = ?";
                     try (PreparedStatement ps = conn.prepareStatement(updateItem)) {
-                        ps.setInt(1, itemId); ps.executeUpdate();
+                        ps.setInt(1, itemId);
+                        ps.executeUpdate();
                     }
+                    // Auto-reject every other pending claim for this item
                     String rejectOthers = "UPDATE claim SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW() " +
                                           "WHERE item_id = ? AND claim_id != ? AND status = 'pending'";
                     try (PreparedStatement ps = conn.prepareStatement(rejectOthers)) {
-                        ps.setInt(1, adminId); ps.setInt(2, itemId); ps.setInt(3, claimId);
+                        ps.setInt(1, adminId);
+                        ps.setInt(2, itemId);
+                        ps.setInt(3, claimId);
                         ps.executeUpdate();
                     }
                 } else {
+                    // Rejected: reopen item so it can be claimed again
                     String updateItem = "UPDATE item SET status = 'open' WHERE item_id = ?";
                     try (PreparedStatement ps = conn.prepareStatement(updateItem)) {
-                        ps.setInt(1, itemId); ps.executeUpdate();
+                        ps.setInt(1, itemId);
+                        ps.executeUpdate();
                     }
                 }
             }
@@ -136,14 +154,14 @@ public class ClaimDAO {
             return true;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("Error updating claim status for claim {}", claimId, e);
             if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+                try { conn.rollback(); } catch (SQLException ex) { log.error("Rollback failed", ex); }
             }
             return false;
         } finally {
             if (conn != null) {
-                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { log.error("Error closing connection", e); }
             }
         }
     }

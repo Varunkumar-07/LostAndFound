@@ -2,12 +2,15 @@ package com.lostnfound.dao;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 public class DBConnection {
 
+    private static final Logger log = LoggerFactory.getLogger(DBConnection.class);
     private static final HikariDataSource dataSource;
 
     static {
@@ -22,6 +25,7 @@ public class DBConnection {
         config.setIdleTimeout(600_000);
         config.setMaxLifetime(1_800_000);
         dataSource = new HikariDataSource(config);
+        log.info("Connection pool initialised (url={})", config.getJdbcUrl());
     }
 
     public static Connection getConnection() throws SQLException {

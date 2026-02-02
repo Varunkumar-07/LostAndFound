@@ -2,6 +2,8 @@ package com.lostnfound.dao;
 
 import com.lostnfound.model.Admin;
 import org.mindrot.jbcrypt.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -10,6 +12,12 @@ import java.sql.*;
 
 public class AdminDAO {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminDAO.class);
+
+    /**
+     * Validates credentials. Accepts both legacy MD5 hashes and BCrypt.
+     * On successful MD5 login the hash is transparently migrated to BCrypt.
+     */
     public Admin validateAdmin(String username, String plainPassword) {
         String sql = "SELECT admin_id, username, password_hash, created_at FROM admin WHERE username = ?";
         try (Connection conn = DBConnection.getConnection();
@@ -27,6 +35,7 @@ public class AdminDAO {
                     if (matched) {
                         String bcryptHash = BCrypt.hashpw(plainPassword, BCrypt.gensalt(12));
                         migrateHash(rs.getInt("admin_id"), bcryptHash);
+                        log.info("Migrated admin '{}' from MD5 to BCrypt", username);
                     }
                 } else {
                     matched = BCrypt.checkpw(plainPassword, storedHash);
@@ -36,13 +45,12 @@ public class AdminDAO {
                     Admin admin = new Admin();
                     admin.setAdminId(rs.getInt("admin_id"));
                     admin.setUsername(rs.getString("username"));
-                    admin.setPasswordHash(storedHash);
                     admin.setCreatedAt(rs.getTimestamp("created_at"));
                     return admin;
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("Error validating admin '{}'", username, e);
         }
         return null;
     }
@@ -63,7 +71,7 @@ public class AdminDAO {
             ps.setInt(2, adminId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("Failed to migrate password hash for admin {}", adminId, e);
         }
     }
 
