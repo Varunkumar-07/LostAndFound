@@ -58,8 +58,12 @@
                     <input type="text" id="location" name="location" class="form-input" placeholder="e.g. Library, Block A" required>
                 </div>
                 <div class="form-group">
-                    <label for="contactInfo" class="form-label">Your Contact Info</label>
-                    <input type="text" id="contactInfo" name="contactInfo" class="form-input" placeholder="Phone number or email address" required>
+                    <label for="reportedBy" class="form-label">Reported By</label>
+                    <input type="text" id="reportedBy" name="reportedBy" class="form-input" placeholder="Your name">
+                </div>
+                <div class="form-group">
+                    <label for="contact" class="form-label">Your Contact Info</label>
+                    <input type="text" id="contact" name="contact" class="form-input" placeholder="Phone number or email address" required>
                 </div>
                 <button type="submit" class="btn btn-accent btn-full btn-lg" style="margin-top: 8px;">Submit Report</button>
             </form>
