@@ -105,11 +105,13 @@
                                         <form method="POST" action="<%= ctx %>/admin/dashboard" style="display:inline;">
                                             <input type="hidden" name="claimId" value="<%= claim.getClaimId() %>">
                                             <input type="hidden" name="action" value="approve">
+                                            <input type="hidden" name="_csrf" value="<%= session.getAttribute("csrfToken") %>">
                                             <button type="submit" class="btn-action btn-approve">Approve</button>
                                         </form>
                                         <form method="POST" action="<%= ctx %>/admin/dashboard" style="display:inline;">
                                             <input type="hidden" name="claimId" value="<%= claim.getClaimId() %>">
                                             <input type="hidden" name="action" value="reject">
+                                            <input type="hidden" name="_csrf" value="<%= session.getAttribute("csrfToken") %>">
                                             <button type="submit" class="btn-action btn-reject">Reject</button>
                                         </form>
                                     </td>
